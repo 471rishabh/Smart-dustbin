@@ -1,0 +1,197 @@
+//without lcd
+#include <Servo.h>
+
+Servo servoDry;
+Servo servoWet;
+
+const int trigPin = 6;
+const int echoPin = 7;
+const int moisturePin = A0;
+
+long duration, dist, average;
+long aver[3];
+
+void setup() {
+  servoWet.attach(9);
+  servoDry.attach(10);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(moisturePin, INPUT);
+  Serial.begin(9600);
+  servoDry.write(0);
+  servoWet.write(0);
+}
+
+void measureDistance() {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(5);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(15);
+  digitalWrite(trigPin, LOW);
+  duration = pulseIn(echoPin, HIGH);
+  dist = (duration/2) / 29.1;
+}
+
+void loop() {
+  // Measure distance three times and take the average
+  for (int i = 0; i <= 2; i++) {
+    measureDistance();
+    aver[i] = dist;
+    delay(10);
+  }
+  dist = (aver[0] + aver[1] + aver[2]) / 3;
+  
+  // Read moisture sensor
+  int moistureValue = analogRead(moisturePin);
+  
+  // Print sensor readings to Serial monitor
+  Serial.print("Distance: ");
+  Serial.print(dist);
+  Serial.print(" cm");
+  Serial.print(", Moisture: ");
+  Serial.println(moistureValue);
+  
+  // Check if distance is less than 50 cm and moisture is below a threshold (dry waste)
+  if (dist < 50 && moistureValue > 500) {
+    servoDry.attach(10);
+    delay(1);
+    servoDry.write(90);
+    delay(9000);
+    servoDry.write(0);
+    delay(1000);
+    servoDry.detach();
+
+  }
+  // Check if distance is less than 50 cm and moisture is above a threshold (wet waste)
+  else if (dist < 50 && moistureValue <= 700) {
+    servoWet.attach(9);
+    delay(1);
+    servoWet.write(90);
+    delay(9000);
+    servoWet.write(180);
+    delay(1000);
+    servoWet.detach();
+  }
+
+  else {
+    servoDry.write(0);
+    servoWet.write(0);
+  }
+  
+  delay(500);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//with lcd
+#include <LiquidCrystal.h>
+#include <Servo.h>
+
+Servo servoDry;
+Servo servoWet;
+
+const int trigPin = 6;
+const int echoPin = 7;
+const int moisturePin = A0;
+
+long duration, dist, average;
+long aver[3];
+
+const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+
+void setup() {
+  servoWet.attach(9);
+  servoDry.attach(10);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(moisturePin, INPUT);
+  Serial.begin(9600);
+  servoDry.write(0);
+  servoWet.write(0);
+  lcd.begin(16, 2);
+}
+
+void measureDistance() {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(5);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(15);
+  digitalWrite(trigPin, LOW);
+  duration = pulseIn(echoPin, HIGH);
+  dist = (duration/2) / 29.1;
+}
+
+void loop() {
+  // Measure distance three times and take the average
+  for (int i = 0; i <= 2; i++) {
+    measureDistance();
+    aver[i] = dist;
+    delay(10);
+  }
+  dist = (aver[0] + aver[1] + aver[2]) / 3;
+  
+  // Read moisture sensor
+  int moistureValue = analogRead(moisturePin);
+  
+  // Print sensor readings to Serial monitor
+  Serial.print("Distance: ");
+  Serial.print(dist);
+  Serial.print(" cm");
+  Serial.print(", Moisture: ");
+  Serial.println(moistureValue);
+  
+  // Check if distance is less than 50 cm and moisture is below a threshold (dry waste)
+  if (dist < 50 && moistureValue > 900) {
+    servoDry.attach(10);
+    delay(1);
+    servoDry.write(90);
+    delay(9000);
+    servoDry.write(0);
+    delay(1000);
+    servoDry.detach();
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Dry waste bin");
+    lcd.setCursor(0, 1);
+    lcd.print("Opened");
+    delay(2000);
+    lcd.clear();
+  }
+  // Check if distance is less than 50 cm and moisture is above a threshold (wet waste)
+  else if (dist < 50 && moistureValue <= 900) {
+    servoWet.attach(9);
+    delay(1);
+    servoWet.write(90);
+    delay(9000);
+    servoWet.write(180);
+    delay(1000);
+    servoWet.detach();
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Wet waste bin");
+    lcd.setCursor(0, 1);
+    lcd.print("Opened");
+    delay(2000);
+    lcd.clear();
+  }
+
+  else {
+    servoDry.write(0);
+    servoWet.write(0);
+  }
+  
+  delay(500);
+}
