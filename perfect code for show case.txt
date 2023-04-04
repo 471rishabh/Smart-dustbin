@@ -1,0 +1,129 @@
+//code with ir sensor to detect object
+//code with all angles perfect
+
+
+
+#include <LiquidCrystal.h>
+#include <Servo.h>
+
+Servo servoDry;
+Servo servoWet;
+
+const int trigPin = 6;
+const int echoPin = 7;
+const int moisturePin = A0;
+const int irPin = 8;
+bool objectDetected = false;
+//const int presencePin = A1;  //nothinmg is connected dont worry
+
+
+
+long duration, dist, average;
+long aver[3];
+
+const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+
+void setup() {
+  servoWet.attach(9);
+  servoDry.attach(10);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(moisturePin, INPUT);
+   pinMode(irPin, INPUT); // Initialize IR sensor pin as input
+  //pinMode(presencePin, INPUT);
+  Serial.begin(9600);
+  //servoDry.write(100);
+  servoWet.write(180);
+  lcd.begin(16, 2);
+}
+
+void measureDistance() {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(5);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(15);
+  digitalWrite(trigPin, LOW);
+  duration = pulseIn(echoPin, HIGH);
+  dist = (duration/2) / 29.1;
+}
+
+void loop() {
+  // Measure distance three times and take the average
+  for (int i = 0; i <= 2; i++) {
+    measureDistance();
+    aver[i] = dist;
+    delay(10);
+  }
+  dist = (aver[0] + aver[1] + aver[2]) / 3;
+  
+  // Read moisture sensor
+  int moistureValue = analogRead(moisturePin);
+  boolean isObjectPresent = (digitalRead(irPin) == LOW);
+  if (digitalRead(irPin) == LOW) {
+    objectDetected = true; // Object detected
+  }
+  else {
+    objectDetected = false; // Object not detected
+  }
+  Serial.print(objectDetected);
+  delay(100);
+
+  // Read presence sensor
+//  int presenceValue = analogRead(presencePin);
+//  boolean isPersonAround = (presenceValue > 500); // adjust threshold as necessary
+//  Serial.print(presenceValue);
+  
+  // Print sensor readings to Serial monitor
+  Serial.print("Distance: ");
+  Serial.print(dist);
+  Serial.print(" cm");
+  Serial.print(", Moisture: ");
+  Serial.println(moistureValue);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(" Smart Dustbin ");
+    delay(2000);
+  lcd.clear();
+  lcd.setCursor(1, 1);
+  lcd.print(" By IOT Garage ");
+  
+//  if (!isPersonAround) {
+//    servoDry.write(100);
+//    servoWet.write(100);
+//    delay(500);
+//  }
+  
+  // Check if distance is less than 50 cm and moisture is below a threshold (dry waste)
+  if (dist < 50 && moistureValue > 990 && isObjectPresent==1) {
+
+    servoWet.write(180);
+    servoDry.write(180);
+    delay(3000);
+    servoDry.write(100);
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Dry waste bin");
+    lcd.setCursor(0, 1);
+    lcd.print("Opened");
+    delay(2000);
+    lcd.clear();
+  }
+  // Check if distance is less than 50 cm and moisture is above a threshold (wet waste)
+  else if (dist < 50 && moistureValue <= 990  && isObjectPresent==1 ) {
+//     if (dist < 50 && moistureValue > 790 ){ //test statementm
+//      servoWet.write(10);
+    servoWet.write(120);//upar krne ka angle wet ko
+    servoDry.write(20);
+    delay(3000);
+    servoWet.write(180);
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Wet waste bin");
+    lcd.setCursor(0, 1);
+    lcd.print("Opened");
+    delay(2000);
+    lcd.clear();
+  }
+  
+}
